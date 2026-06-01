@@ -1,9 +1,72 @@
 # Agente Virtual
 
-Aplicación web moderna con Next.js App Router, React, TypeScript y Tailwind CSS para elegir entre dos modos de agente:
+Aplicación web piloto para los Consultorios Jurídicos de la Universidad de Costa Rica. Permite conversar con un agente virtual en dos modalidades:
 
-- `Agente con Avatar y Voz`: Dify genera la respuesta y HeyGen LiveAvatar la presenta con video y voz.
-- `Agente solo Texto`: chat directo contra Dify.
+- **Agente con Avatar y Voz**: Dify genera la respuesta y HeyGen LiveAvatar la presenta con video y voz.
+- **Agente solo Texto**: chat escrito conectado directamente con Dify.
+
+El proyecto está construido con Next.js App Router, React, TypeScript y Tailwind CSS.
+
+## Funcionalidades Actuales
+
+- Pantalla inicial para seleccionar el modo de atención.
+- Chat de texto conectado a Dify.
+- Experiencia con avatar en tiempo real usando HeyGen LiveAvatar.
+- Entrada por voz en el modo avatar cuando el navegador soporta `SpeechRecognition`.
+- Envío de mensajes con botón o presionando `Enter`.
+- Salto de línea en el campo de texto con `Shift + Enter`.
+- API routes internas para no exponer llaves privadas en el navegador.
+- Manejo básico de errores para Dify y LiveAvatar.
+- Pruebas unitarias para servicios y helpers principales.
+
+## Flujo General
+
+```txt
+Usuario
+  ↓
+Interfaz Next.js
+  ↓
+API routes internas
+  ↓
+Dify /chat-messages
+  ↓
+Respuesta del agente
+  ↓
+Modo texto: se muestra en pantalla
+Modo avatar: LiveAvatar dice la respuesta con video y voz
+```
+
+En el modo avatar, Dify conserva el control conversacional. LiveAvatar se usa para iniciar la sesión, mostrar el video y reproducir en voz la respuesta generada por Dify.
+
+## Rutas De La App
+
+- `/`: página inicial con selector de modo.
+- `/text-agent`: chat de texto conectado a Dify.
+- `/avatar-agent`: chat con panel de LiveAvatar, video y controles de sesión.
+
+## API Routes
+
+- `POST /api/dify/chat`: envía el mensaje del usuario a Dify y devuelve la respuesta.
+- `POST /api/heygen/session`: crea un session token para iniciar LiveAvatar.
+- `POST /api/heygen/stop`: detiene una sesión activa de LiveAvatar.
+
+## Componentes Principales
+
+- `AgentModeCard`: tarjeta reutilizable para seleccionar un modo de agente.
+- `AvatarPanel`: controla la sesión de LiveAvatar, el video, estados de conexión y reproducción de voz.
+- `ChatInput`: campo compartido de escritura, envío con `Enter`, botón de enviar y dictado opcional.
+- `ChatWindow`: muestra los mensajes de usuario y asistente.
+- `LoadingIndicator`: indicador visual simple mientras se espera respuesta.
+
+## Servicios Y Utilidades
+
+- `src/lib/dify.ts`: cliente servidor para llamar a Dify.
+- `src/lib/heygen.ts`: cliente servidor para crear y detener sesiones LiveAvatar.
+- `src/lib/http.ts`: parser común de respuestas externas y errores HTTP.
+- `src/lib/env.ts`: helpers para variables de entorno requeridas u opcionales.
+- `src/lib/liveavatar-errors.ts`: mensajes amigables para errores comunes de LiveAvatar.
+- `src/lib/liveavatar-state.ts`: mapeo de estados del SDK a estados de la interfaz.
+- `src/lib/types.ts`: tipos compartidos del proyecto.
 
 ## Instalación
 
@@ -13,18 +76,26 @@ cp .env.example .env.local
 npm run dev
 ```
 
-Abre `http://localhost:3000`.
+Abre:
+
+```txt
+http://localhost:3000
+```
 
 ## Variables De Entorno
+
+Configura `.env.local` con tus valores reales:
 
 ```env
 DIFY_API_URL=
 DIFY_API_KEY=
 DIFY_USER_ID=
+
 HEYGEN_API_KEY=
 HEYGEN_AVATAR_ID=
 HEYGEN_VOICE_ID=
-NEXT_PUBLIC_APP_URL=
+
+NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
 
 Opcionales:
@@ -34,41 +105,65 @@ HEYGEN_CONTEXT_ID=
 HEYGEN_SANDBOX=false
 ```
 
-Si no configuras `HEYGEN_AVATAR_ID`, la app usa el avatar sandbox de LiveAvatar y activa sandbox automáticamente. Si configuras tu propio avatar, la app usa modo producción por defecto; no actives `HEYGEN_SANDBOX=true` con un avatar propio porque LiveAvatar lo rechazará.
+Notas:
 
-`DIFY_API_KEY` y `HEYGEN_API_KEY` solo se usan en API routes y servicios de servidor. No se exponen al navegador.
+- Si `HEYGEN_AVATAR_ID` queda vacío, la app usa el avatar sandbox de LiveAvatar.
+- Si usas un avatar propio, no actives `HEYGEN_SANDBOX=true`.
+- `DIFY_API_KEY` y `HEYGEN_API_KEY` solo se usan en el servidor.
+- No subas `.env.local` al repositorio.
 
-## Flujo
+## Comandos
 
-```txt
-Usuario
-  ↓
-Next.js Frontend
-  ↓
-API Routes internas
-  ↓
-Dify /chat-messages
-  ↓
-Respuesta del agente
-  ↓
-Modo texto: se muestra en chat
-Modo avatar: se envía al Web SDK de LiveAvatar con session token
+```bash
+npm run dev
 ```
 
-El modo avatar usa el patrón recomendado por `liveavatar-integrate`: Dify conserva el control conversacional y LiveAvatar se usa en FULL mode para sesión, video, voz y `repeat()` de la respuesta generada externamente.
+Inicia el servidor de desarrollo.
 
-## Rutas
+```bash
+npm test
+```
 
-- `/`: selector de modo.
-- `/text-agent`: chat de texto con Dify.
-- `/avatar-agent`: sesión LiveAvatar con chat y entrada por voz del navegador si está disponible.
-- `POST /api/dify/chat`: proxy seguro a Dify `/chat-messages`.
-- `POST /api/heygen/session`: crea un session token de LiveAvatar.
-- `POST /api/heygen/stop`: detiene una sesión con bearer session token.
+Ejecuta las pruebas unitarias con Vitest.
 
-## HeyGen LiveAvatar Skills
+```bash
+npm run lint
+```
 
-Se instalaron los skills oficiales en:
+Revisa reglas de ESLint.
+
+```bash
+npm run build
+```
+
+Compila la aplicación para producción.
+
+## Estructura Del Proyecto
+
+```txt
+src/
+  app/
+    api/
+      dify/chat/
+      heygen/session/
+      heygen/stop/
+    avatar-agent/
+    text-agent/
+    page.tsx
+  components/
+  lib/
+```
+
+## Seguridad
+
+- Las llaves de Dify y HeyGen nunca se envían al navegador.
+- El frontend llama a API routes internas.
+- `.env.local` está ignorado por Git.
+- `.env.example` solo debe contener valores de ejemplo o campos vacíos.
+
+## Skills De LiveAvatar
+
+El proyecto incluye documentación local de los skills oficiales de LiveAvatar:
 
 ```txt
 .agents/skills/liveavatar-integrate
@@ -76,15 +171,4 @@ Se instalaron los skills oficiales en:
 .agents/skills/liveavatar-feedback
 ```
 
-Para instalarlos en otro entorno:
-
-```bash
-npx skills add heygen-com/liveavatar-agent-skills
-```
-
-## Verificación
-
-```bash
-npm test
-npm run build
-```
+Sirven como referencia para integración, depuración y retroalimentación del uso de LiveAvatar.
