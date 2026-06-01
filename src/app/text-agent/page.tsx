@@ -79,7 +79,7 @@ export default function TextAgentPage() {
         </div>
       ) : null}
 
-      <section className="flex min-h-0 flex-1 flex-col gap-4">
+      <section className="flex h-[33rem] min-h-0 flex-col gap-4">
         <ChatWindow messages={messages} isLoading={isLoading} />
         <ChatInput
           onSubmit={sendMessage}
@@ -87,6 +87,10 @@ export default function TextAgentPage() {
           placeholder="Pregunta al agente"
         />
       </section>
+
+      <footer className="mt-auto pt-8 text-center text-sm text-slate-500">
+        Curso PF-3311 - Agentes Virtuales Inteligentes
+      </footer>
     </main>
   );
 }

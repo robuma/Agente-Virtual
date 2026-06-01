@@ -6,6 +6,7 @@ import { ArrowLeft } from "lucide-react";
 import { AvatarPanel, type AvatarPanelHandle } from "@/components/AvatarPanel";
 import { ChatInput } from "@/components/ChatInput";
 import { ChatWindow } from "@/components/ChatWindow";
+import type { AvatarPanelState } from "@/lib/liveavatar-state";
 import type { ChatMessage, DifyChatResponse } from "@/lib/types";
 
 export default function AvatarAgentPage() {
@@ -13,9 +14,14 @@ export default function AvatarAgentPage() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [avatarState, setAvatarState] =
+    useState<AvatarPanelState>("disconnected");
   const [error, setError] = useState<string | null>(null);
+  const isAvatarReady = avatarState === "connected";
 
   async function sendMessage(query: string) {
+    if (!isAvatarReady) return;
+
     setIsLoading(true);
     setError(null);
     setMessages((current) => [
@@ -77,14 +83,22 @@ export default function AvatarAgentPage() {
         </div>
       ) : null}
 
-      <section className="grid min-h-0 flex-1 gap-5 lg:grid-cols-[minmax(0,1.15fr)_minmax(22rem,0.85fr)]">
-        <AvatarPanel ref={avatarRef} onError={setError} />
+      <section className="grid min-h-0 items-stretch gap-5 lg:grid-cols-[minmax(0,1.15fr)_minmax(22rem,0.85fr)]">
+        <AvatarPanel
+          ref={avatarRef}
+          onError={setError}
+          onStateChange={setAvatarState}
+        />
         <div className="flex min-h-0 flex-col gap-4">
-          <ChatWindow messages={messages} isLoading={isLoading} compact />
+          <ChatWindow messages={messages} isLoading={isLoading} />
           <ChatInput
             onSubmit={sendMessage}
-            disabled={isLoading}
-            placeholder="Pregunta al avatar"
+            disabled={isLoading || !isAvatarReady}
+            placeholder={
+              isAvatarReady
+                ? "Pregunta al avatar"
+                : "Inicia el avatar para escribir"
+            }
             enableVoice
           />
         </div>

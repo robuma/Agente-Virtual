@@ -2,6 +2,7 @@
 
 import {
   forwardRef,
+  useEffect,
   useImperativeHandle,
   useRef,
   useState
@@ -16,6 +17,7 @@ export type AvatarPanelHandle = {
 
 type AvatarPanelProps = {
   onError: (message: string) => void;
+  onStateChange?: (state: AvatarPanelState) => void;
 };
 
 type LiveAvatarSessionInstance = {
@@ -27,18 +29,63 @@ type LiveAvatarSessionInstance = {
 };
 
 export const AvatarPanel = forwardRef<AvatarPanelHandle, AvatarPanelProps>(
-  function AvatarPanel({ onError }, ref) {
+  function AvatarPanel({ onError, onStateChange }, ref) {
     const videoRef = useRef<HTMLVideoElement | null>(null);
     const sessionRef = useRef<LiveAvatarSessionInstance | null>(null);
     const sessionTokenRef = useRef<string | null>(null);
+    const streamReadyRef = useRef(false);
+    const videoReadyRef = useRef(false);
+    const pendingSpeechRef = useRef<string[]>([]);
     const [state, setState] = useState<AvatarPanelState>("disconnected");
+
+    const isAvatarReady = () =>
+      Boolean(sessionRef.current && streamReadyRef.current && videoReadyRef.current);
+
+    useEffect(() => {
+      onStateChange?.(state);
+    }, [onStateChange, state]);
 
     useImperativeHandle(ref, () => ({
       speak(text: string) {
-        sessionRef.current?.repeat(text);
-        setState("speaking");
+        const session = sessionRef.current;
+
+        if (!session) return;
+
+        if (!isAvatarReady()) {
+          pendingSpeechRef.current.push(text);
+          return;
+        }
+
+        session.repeat(text);
       }
     }));
+
+    function resetSessionState() {
+      sessionRef.current = null;
+      sessionTokenRef.current = null;
+      streamReadyRef.current = false;
+      videoReadyRef.current = false;
+      pendingSpeechRef.current = [];
+      setState("disconnected");
+    }
+
+    function speakPendingMessages() {
+      const session = sessionRef.current;
+      if (!session || !isAvatarReady()) return;
+
+      for (const message of pendingSpeechRef.current) {
+        session.repeat(message);
+      }
+      pendingSpeechRef.current = [];
+    }
+
+    function markVideoReady() {
+      if (!sessionRef.current || !streamReadyRef.current) return;
+
+      videoReadyRef.current = true;
+      setState("connected");
+      speakPendingMessages();
+    }
 
     function attachAvatarStream(session: LiveAvatarSessionInstance) {
       const video = videoRef.current;
@@ -47,6 +94,11 @@ export const AvatarPanel = forwardRef<AvatarPanelHandle, AvatarPanelProps>(
       session.attach(video);
       video.muted = false;
       video.volume = 1;
+
+      if (video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
+        markVideoReady();
+      }
+
       void video.play().catch((error) => {
         console.warn("LiveAvatar media playback needs a browser gesture.", error);
       });
@@ -62,7 +114,7 @@ export const AvatarPanel = forwardRef<AvatarPanelHandle, AvatarPanelProps>(
           throw new Error(tokenPayload.error || "No se pudo crear la sesión.");
         }
 
-        const { LiveAvatarSession, SessionEvent, AgentEventsEnum } = await import(
+        const { LiveAvatarSession, SessionEvent } = await import(
           "@heygen/liveavatar-web-sdk"
         );
         const session = new LiveAvatarSession(tokenPayload.sessionToken, {
@@ -72,22 +124,31 @@ export const AvatarPanel = forwardRef<AvatarPanelHandle, AvatarPanelProps>(
         sessionRef.current = session;
         sessionTokenRef.current = tokenPayload.sessionToken;
         session.on(SessionEvent.SESSION_STATE_CHANGED, (nextState) => {
-          setState(toAvatarPanelState(String(nextState)));
-        });
-        session.on(SessionEvent.SESSION_STREAM_READY, () => {
-          attachAvatarStream(session);
+          const nextPanelState = toAvatarPanelState(String(nextState));
+
+          if (nextPanelState === "disconnected") {
+            resetSessionState();
+            return;
+          }
+
+          if (nextPanelState === "connecting" || !isAvatarReady()) {
+            setState("connecting");
+            return;
+          }
+
           setState("connected");
         });
-        session.on(AgentEventsEnum.AVATAR_SPEAK_STARTED, () => setState("speaking"));
-        session.on(AgentEventsEnum.AVATAR_SPEAK_ENDED, () => setState("connected"));
-        session.on(SessionEvent.SESSION_DISCONNECTED, () => setState("disconnected"));
+        session.on(SessionEvent.SESSION_STREAM_READY, () => {
+          streamReadyRef.current = true;
+          attachAvatarStream(session);
+        });
+        session.on(SessionEvent.SESSION_DISCONNECTED, resetSessionState);
 
         await session.start();
         attachAvatarStream(session);
-        setState("connected");
       } catch (error) {
         console.error(error);
-        setState("disconnected");
+        resetSessionState();
         onError(getLiveAvatarErrorMessage(error));
       }
     }
@@ -97,9 +158,7 @@ export const AvatarPanel = forwardRef<AvatarPanelHandle, AvatarPanelProps>(
       const currentToken = sessionTokenRef.current;
 
       try {
-        setState("disconnected");
-        sessionRef.current = null;
-        sessionTokenRef.current = null;
+        resetSessionState();
 
         if (currentSession) await currentSession.stop();
         else if (currentToken) {
@@ -118,31 +177,47 @@ export const AvatarPanel = forwardRef<AvatarPanelHandle, AvatarPanelProps>(
     const stateLabel = {
       disconnected: "Desconectado",
       connecting: "Conectando",
-      connected: "Conectado",
-      speaking: "Hablando"
+      connected: "Conectado"
+    }[state];
+    const stateDotClass = {
+      disconnected: "bg-red-500",
+      connecting: "bg-amber-400",
+      connected: "bg-emerald-500"
     }[state];
 
     return (
-      <section className="flex min-h-[32rem] flex-col rounded-lg border border-slate-200 bg-white p-4 shadow-soft">
+      <section className="flex min-h-[30rem] flex-col rounded-lg border border-slate-200 bg-white p-4 shadow-soft">
         <div className="mb-3 flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <MonitorPlay aria-hidden className="h-5 w-5 text-brand-700" />
             <span className="text-sm font-semibold text-slate-900">LiveAvatar</span>
           </div>
-          <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
+          <span className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
+            <span
+              aria-hidden
+              className={`h-2 w-2 rounded-full ${stateDotClass}`}
+            />
             {stateLabel}
           </span>
         </div>
-        <div className="relative flex min-h-0 flex-1 items-center justify-center overflow-hidden rounded-lg bg-slate-950">
+        <div className="relative flex min-h-[22rem] flex-1 items-center justify-center overflow-hidden rounded-lg bg-slate-950">
           <video
             ref={videoRef}
             autoPlay
             playsInline
-            className="h-full min-h-[24rem] w-full object-cover"
+            onCanPlay={markVideoReady}
+            onLoadedData={markVideoReady}
+            onPlaying={markVideoReady}
+            className="h-full w-full object-cover"
           />
           {state === "disconnected" ? (
+            <div className="absolute inset-0 flex items-center justify-center bg-slate-950/80 px-6 text-center text-sm leading-6 text-slate-300">
+              Para iniciar una conversación, haz clic en Iniciar conversación.
+            </div>
+          ) : null}
+          {state === "connecting" ? (
             <div className="absolute inset-0 flex items-center justify-center bg-slate-950/80 text-center text-sm text-slate-300">
-              El video aparecerá al iniciar sesión.
+              Conectando video del avatar...
             </div>
           ) : null}
         </div>
@@ -154,7 +229,7 @@ export const AvatarPanel = forwardRef<AvatarPanelHandle, AvatarPanelProps>(
             className="flex h-11 items-center justify-center gap-2 rounded-md bg-brand-600 px-4 text-sm font-semibold text-white transition hover:bg-brand-700 disabled:cursor-not-allowed disabled:bg-slate-300"
           >
             <Play aria-hidden className="h-4 w-4" />
-            Iniciar
+            Iniciar conversación
           </button>
           <button
             type="button"
@@ -163,7 +238,7 @@ export const AvatarPanel = forwardRef<AvatarPanelHandle, AvatarPanelProps>(
             className="flex h-11 items-center justify-center gap-2 rounded-md border border-slate-200 px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-45"
           >
             <PhoneOff aria-hidden className="h-4 w-4" />
-            Detener
+            Finalizar conversación
           </button>
         </div>
       </section>

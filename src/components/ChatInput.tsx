@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, KeyboardEvent, useEffect, useState } from "react";
+import { FormEvent, KeyboardEvent, useEffect, useRef, useState } from "react";
 import { Mic, Send, Square } from "lucide-react";
 
 type SpeechRecognitionConstructor = new () => SpeechRecognition;
@@ -38,6 +38,8 @@ export function ChatInput({
   placeholder = "Escribe tu mensaje",
   enableVoice
 }: ChatInputProps) {
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const shouldRestoreFocusRef = useRef(false);
   const [value, setValue] = useState("");
   const [recognition, setRecognition] = useState<SpeechRecognition | null>(null);
   const [isListening, setIsListening] = useState(false);
@@ -66,13 +68,35 @@ export function ChatInput({
     return () => instance.stop();
   }, [enableVoice]);
 
+  useEffect(() => {
+    if (disabled || !shouldRestoreFocusRef.current) return;
+
+    shouldRestoreFocusRef.current = false;
+    requestAnimationFrame(() => {
+      textareaRef.current?.focus();
+    });
+  }, [disabled]);
+
   function submitMessage() {
     const trimmed = value.trim();
 
     if (!trimmed || disabled) return;
 
     setValue("");
-    void onSubmit(trimmed);
+    shouldRestoreFocusRef.current = true;
+    const submitResult = onSubmit(trimmed);
+
+    void Promise.resolve(submitResult).finally(() => {
+      if (!disabled) {
+        shouldRestoreFocusRef.current = false;
+        requestAnimationFrame(() => {
+          textareaRef.current?.focus();
+        });
+      }
+    });
+    requestAnimationFrame(() => {
+      textareaRef.current?.focus();
+    });
   }
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -105,13 +129,14 @@ export function ChatInput({
   return (
     <form onSubmit={handleSubmit} className="flex items-end gap-2 rounded-lg border border-slate-200 bg-white p-2">
       <textarea
+        ref={textareaRef}
         value={value}
         onChange={(event) => setValue(event.target.value)}
         onKeyDown={handleKeyDown}
         placeholder={placeholder}
         rows={1}
         disabled={disabled}
-        className="min-h-11 flex-1 resize-none rounded-md border-0 bg-transparent px-3 py-3 text-sm text-slate-900 outline-none placeholder:text-slate-400 disabled:cursor-not-allowed disabled:opacity-60"
+        className="h-11 max-h-11 min-h-11 flex-1 resize-none overflow-y-auto rounded-md border-0 bg-transparent px-3 py-3 text-sm text-slate-900 outline-none placeholder:text-slate-400 disabled:cursor-not-allowed disabled:opacity-60"
       />
       {enableVoice ? (
         <button

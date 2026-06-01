@@ -12,8 +12,8 @@ type ChatWindowProps = {
 export function ChatWindow({ messages, isLoading, compact }: ChatWindowProps) {
   return (
     <div
-      className={`flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto rounded-lg border border-slate-200 bg-white p-4 ${
-        compact ? "max-h-[28rem]" : "min-h-[28rem]"
+      className={`flex h-[28rem] min-h-0 flex-col gap-4 overflow-y-auto rounded-lg border border-slate-200 bg-white p-4 ${
+        compact ? "lg:h-[28rem]" : ""
       }`}
     >
       {messages.length === 0 ? (
