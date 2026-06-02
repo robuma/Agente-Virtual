@@ -36,6 +36,7 @@ export const AvatarPanel = forwardRef<AvatarPanelHandle, AvatarPanelProps>(
     const streamReadyRef = useRef(false);
     const videoReadyRef = useRef(false);
     const pendingSpeechRef = useRef<string[]>([]);
+    const connectionTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const [state, setState] = useState<AvatarPanelState>("disconnected");
 
     const isAvatarReady = () =>
@@ -61,6 +62,10 @@ export const AvatarPanel = forwardRef<AvatarPanelHandle, AvatarPanelProps>(
     }));
 
     function resetSessionState() {
+      if (connectionTimeoutRef.current) {
+        clearTimeout(connectionTimeoutRef.current);
+        connectionTimeoutRef.current = null;
+      }
       sessionRef.current = null;
       sessionTokenRef.current = null;
       streamReadyRef.current = false;
@@ -82,6 +87,10 @@ export const AvatarPanel = forwardRef<AvatarPanelHandle, AvatarPanelProps>(
     function markVideoReady() {
       if (!sessionRef.current || !streamReadyRef.current) return;
 
+      if (connectionTimeoutRef.current) {
+        clearTimeout(connectionTimeoutRef.current);
+        connectionTimeoutRef.current = null;
+      }
       videoReadyRef.current = true;
       setState("connected");
       speakPendingMessages();
@@ -92,21 +101,40 @@ export const AvatarPanel = forwardRef<AvatarPanelHandle, AvatarPanelProps>(
       if (!video) return;
 
       session.attach(video);
-      video.muted = false;
+      video.muted = true;
       video.volume = 1;
 
       if (video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
         markVideoReady();
       }
 
-      void video.play().catch((error) => {
-        console.warn("LiveAvatar media playback needs a browser gesture.", error);
-      });
+      void video
+        .play()
+        .then(() => {
+          video.muted = false;
+        })
+        .catch((error) => {
+          console.warn("LiveAvatar media playback needs a browser gesture.", error);
+          onError(
+            "El navegador bloqueó la reproducción automática del avatar. Intenta iniciar la conversación nuevamente o usa Chrome/Safari con permisos de audio y video."
+          );
+        });
     }
 
     async function startSession() {
       try {
         setState("connecting");
+        connectionTimeoutRef.current = setTimeout(() => {
+          if (isAvatarReady()) return;
+
+          void sessionRef.current?.stop().catch((error) => {
+            console.warn("Could not stop stalled LiveAvatar session.", error);
+          });
+          resetSessionState();
+          onError(
+            "LiveAvatar creó la sesión, pero no recibimos el video del avatar. Revisa la conexión de red/WebRTC o prueba nuevamente con el modo sandbox."
+          );
+        }, 20000);
         const tokenResponse = await fetch("/api/heygen/session", { method: "POST" });
         const tokenPayload = await tokenResponse.json();
 
@@ -142,7 +170,15 @@ export const AvatarPanel = forwardRef<AvatarPanelHandle, AvatarPanelProps>(
           streamReadyRef.current = true;
           attachAvatarStream(session);
         });
-        session.on(SessionEvent.SESSION_DISCONNECTED, resetSessionState);
+        session.on(SessionEvent.SESSION_DISCONNECTED, (reason) => {
+          resetSessionState();
+
+          if (String(reason) === "CLIENT_INITIATED") return;
+
+          onError(
+            `LiveAvatar desconectó la sesión antes de cargar el avatar. Motivo: ${String(reason)}.`
+          );
+        });
 
         await session.start();
         attachAvatarStream(session);
