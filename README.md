@@ -313,3 +313,7 @@ El proyecto incluye documentación local de los skills oficiales de LiveAvatar:
 ```
 
 Sirven como referencia para integración, depuración y retroalimentación del uso de LiveAvatar.
+
+## Video De Demostración
+
+https://youtu.be/B4yIDfMPnRA
