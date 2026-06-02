@@ -56,7 +56,7 @@ export default function TextAgentPage() {
   }
 
   return (
-    <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col justify-center px-5 py-6 sm:px-8">
+    <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col px-5 pt-16 pb-6 sm:px-8 lg:pt-20">
       <header className="mb-6 flex items-center justify-between gap-4">
         <Link
           href="/"

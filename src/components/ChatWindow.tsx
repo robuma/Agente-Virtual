@@ -1,6 +1,7 @@
 "use client";
 
 import type { ChatMessage } from "@/lib/types";
+import { useEffect, useRef } from "react";
 import { LoadingIndicator } from "./LoadingIndicator";
 
 type ChatWindowProps = {
@@ -10,6 +11,12 @@ type ChatWindowProps = {
 };
 
 export function ChatWindow({ messages, isLoading, compact }: ChatWindowProps) {
+  const bottomRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ block: "end", behavior: "smooth" });
+  }, [messages, isLoading]);
+
   return (
     <div
       className={`flex h-[28rem] min-h-0 flex-col gap-4 overflow-y-auto rounded-lg border border-slate-200 bg-white p-4 ${
@@ -39,6 +46,7 @@ export function ChatWindow({ messages, isLoading, compact }: ChatWindowProps) {
         ))
       )}
       {isLoading ? <LoadingIndicator /> : null}
+      <div ref={bottomRef} aria-hidden className="h-px shrink-0" />
     </div>
   );
 }
