@@ -58,7 +58,7 @@ export default function AvatarAgentPage() {
   }
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-7xl flex-col px-5 py-6 sm:px-8">
+    <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col justify-center px-5 py-6 sm:px-8">
       <header className="mb-6 flex items-center justify-between gap-4">
         <Link
           href="/"

@@ -56,7 +56,7 @@ export default function TextAgentPage() {
   }
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-5xl flex-col px-5 py-6 sm:px-8">
+    <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col justify-center px-5 py-6 sm:px-8">
       <header className="mb-6 flex items-center justify-between gap-4">
         <Link
           href="/"
@@ -88,9 +88,6 @@ export default function TextAgentPage() {
         />
       </section>
 
-      <footer className="mt-auto pt-8 text-center text-sm text-slate-500">
-        Curso PF-3311 - Agentes Virtuales Inteligentes
-      </footer>
     </main>
   );
 }

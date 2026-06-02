@@ -1,22 +1,10 @@
-import { Bot, MessageSquareText, MonitorPlay } from "lucide-react";
+import { MessageSquareText, MonitorPlay } from "lucide-react";
 import { AgentModeCard } from "@/components/AgentModeCard";
 
 export default function HomePage() {
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-5 py-8 sm:px-8 lg:py-12">
-      <nav className="flex items-center justify-between gap-4">
-        <div className="flex items-center gap-3 text-lg font-semibold text-ink">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border-2 border-brand-700 bg-transparent text-brand-700 transition-colors duration-200 ease-out hover:bg-brand-700 hover:text-white">
-            <Bot aria-hidden className="h-5 w-5" />
-          </span>
-          Agente de atención virtual
-        </div>
-        <div className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm text-slate-600">
-          Consultorios Jurídicos
-        </div>
-      </nav>
-
-      <section className="flex flex-1 flex-col pt-16 pb-12 lg:pt-20">
+    <main className="mx-auto flex w-full flex-1 flex-col px-5 sm:px-8">
+      <section className="mx-auto flex w-full max-w-6xl flex-1 flex-col justify-center py-12">
         <div className="max-w-3xl">
           <p className="text-sm font-semibold uppercase tracking-[0.18em] text-brand-700">
             Selección de modo
