@@ -1,6 +1,13 @@
 "use client";
 
-import { FormEvent, KeyboardEvent, useEffect, useRef, useState } from "react";
+import {
+  FormEvent,
+  KeyboardEvent,
+  useCallback,
+  useEffect,
+  useRef,
+  useState
+} from "react";
 import { Mic, Send, Square } from "lucide-react";
 
 type SpeechRecognitionConstructor = new () => SpeechRecognition;
@@ -30,20 +37,61 @@ type ChatInputProps = {
   disabled?: boolean;
   placeholder?: string;
   enableVoice?: boolean;
+  autoSubmitVoice?: boolean;
 };
 
 export function ChatInput({
   onSubmit,
   disabled,
   placeholder = "Escribe tu mensaje",
-  enableVoice
+  enableVoice,
+  autoSubmitVoice
 }: ChatInputProps) {
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const shouldRestoreFocusRef = useRef(false);
+  const disabledRef = useRef(disabled);
+  const onSubmitRef = useRef(onSubmit);
+  const voiceTranscriptRef = useRef("");
+  const valueRef = useRef("");
   const [value, setValue] = useState("");
   const [recognition, setRecognition] = useState<SpeechRecognition | null>(null);
   const [isListening, setIsListening] = useState(false);
   const canUseVoice = enableVoice && Boolean(recognition);
+
+  useEffect(() => {
+    disabledRef.current = disabled;
+  }, [disabled]);
+
+  useEffect(() => {
+    onSubmitRef.current = onSubmit;
+  }, [onSubmit]);
+
+  useEffect(() => {
+    valueRef.current = value;
+  }, [value]);
+
+  const submitMessage = useCallback((nextValue = valueRef.current) => {
+    const trimmed = nextValue.trim();
+
+    if (!trimmed || disabledRef.current) return;
+
+    setValue("");
+    valueRef.current = "";
+    shouldRestoreFocusRef.current = true;
+    const submitResult = onSubmitRef.current(trimmed);
+
+    void Promise.resolve(submitResult).finally(() => {
+      if (!disabledRef.current) {
+        shouldRestoreFocusRef.current = false;
+        requestAnimationFrame(() => {
+          textareaRef.current?.focus();
+        });
+      }
+    });
+    requestAnimationFrame(() => {
+      textareaRef.current?.focus();
+    });
+  }, []);
 
   useEffect(() => {
     if (!enableVoice || typeof window === "undefined") return;
@@ -59,14 +107,28 @@ export function ChatInput({
     instance.interimResults = false;
     instance.onresult = (event) => {
       const transcript = event.results[0]?.[0]?.transcript;
-      if (transcript) setValue(transcript);
+      if (!transcript) return;
+
+      voiceTranscriptRef.current = transcript;
+      setValue(transcript);
     };
-    instance.onend = () => setIsListening(false);
-    instance.onerror = () => setIsListening(false);
+    instance.onend = () => {
+      setIsListening(false);
+
+      if (autoSubmitVoice) {
+        submitMessage(voiceTranscriptRef.current);
+      }
+
+      voiceTranscriptRef.current = "";
+    };
+    instance.onerror = () => {
+      setIsListening(false);
+      voiceTranscriptRef.current = "";
+    };
     setRecognition(instance);
 
     return () => instance.stop();
-  }, [enableVoice]);
+  }, [autoSubmitVoice, enableVoice, submitMessage]);
 
   useEffect(() => {
     if (disabled || !shouldRestoreFocusRef.current) return;
@@ -76,28 +138,6 @@ export function ChatInput({
       textareaRef.current?.focus();
     });
   }, [disabled]);
-
-  function submitMessage() {
-    const trimmed = value.trim();
-
-    if (!trimmed || disabled) return;
-
-    setValue("");
-    shouldRestoreFocusRef.current = true;
-    const submitResult = onSubmit(trimmed);
-
-    void Promise.resolve(submitResult).finally(() => {
-      if (!disabled) {
-        shouldRestoreFocusRef.current = false;
-        requestAnimationFrame(() => {
-          textareaRef.current?.focus();
-        });
-      }
-    });
-    requestAnimationFrame(() => {
-      textareaRef.current?.focus();
-    });
-  }
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();

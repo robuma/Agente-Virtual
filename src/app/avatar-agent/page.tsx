@@ -100,6 +100,7 @@ export default function AvatarAgentPage() {
                 : "Inicia el avatar para escribir"
             }
             enableVoice
+            autoSubmitVoice
           />
         </div>
       </section>
