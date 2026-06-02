@@ -3,7 +3,7 @@ import { Bot } from "lucide-react";
 
 export function SiteHeader() {
   return (
-    <header className="mx-auto w-full max-w-7xl px-5 pt-8 sm:px-8 lg:pt-12">
+    <header className="mx-auto w-full max-w-7xl px-5 pt-8 sm:px-8 lg:px-0 lg:pt-12">
       <nav className="flex items-center justify-between gap-4">
         <Link
           href="/"
@@ -14,8 +14,8 @@ export function SiteHeader() {
           </span>
           <span>Agente de atención virtual</span>
         </Link>
-        <div className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm text-slate-600">
-          Consultorios Jurídicos
+        <div className="rounded-full border border-slate-200 bg-white px-4 py-2 text-center text-sm leading-5 text-slate-600">
+          Consultorios Jurídicos UCR
         </div>
       </nav>
     </header>
