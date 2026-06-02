@@ -3,7 +3,7 @@ import { Bot } from "lucide-react";
 
 export function SiteHeader() {
   return (
-    <header className="mx-auto w-full max-w-7xl px-5 pt-8 sm:px-8 lg:px-0 lg:pt-12">
+    <header className="mx-auto w-full max-w-7xl pt-8 px-8 lg:px-12">
       <nav className="flex items-center justify-between gap-4">
         <Link
           href="/"

@@ -3,8 +3,8 @@ import { AgentModeCard } from "@/components/AgentModeCard";
 
 export default function HomePage() {
   return (
-    <main className="mx-auto flex w-full flex-1 flex-col px-5 sm:px-8">
-      <section className="mx-auto flex w-full max-w-7xl flex-1 flex-col pt-20 pb-12 lg:pt-24">
+    <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col px-8 lg:px-12">
+      <section className="mx-auto flex w-full flex-1 flex-col pt-12 pb-12">
         <div className="max-w-3xl">
           <p className="text-sm font-semibold uppercase tracking-[0.18em] text-brand-700">
             Selección de modo
