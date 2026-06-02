@@ -68,6 +68,141 @@ En el modo avatar, Dify conserva el control conversacional. LiveAvatar se usa pa
 - `src/lib/liveavatar-state.ts`: mapeo de estados del SDK a estados de la interfaz.
 - `src/lib/types.ts`: tipos compartidos del proyecto.
 
+## Configuración De Dify
+
+Antes de iniciar esta aplicación, Dify debe estar levantado y el chatflow debe estar importado. La app depende de Dify para generar las respuestas del agente mediante estas variables:
+
+```env
+DIFY_API_URL=
+DIFY_API_KEY=
+```
+
+El directorio `dify/` contiene la documentación y el espacio para versionar el archivo DSL del chatflow:
+
+```txt
+dify/
+  README.md
+  Agente-Virtual-RAG.yaml
+```
+
+Usa [dify/README.md](./dify/README.md) para:
+
+- Levantar Dify localmente con Docker Compose.
+- Crear el usuario administrador inicial.
+- Importar el archivo DSL `Agente-Virtual-RAG.yaml`.
+- Obtener `DIFY_API_URL` y `DIFY_API_KEY` para configurar `.env.local`.
+
+Este paso es importante porque la aplicación Next.js no podrá responder mensajes si Dify no está disponible o si la API key no corresponde al chatflow importado.
+
+## Configuración De HeyGen LiveAvatar
+
+HeyGen LiveAvatar se utiliza únicamente en la modalidad **Agente con Avatar y Voz**. En este proyecto, Dify mantiene el control conversacional y LiveAvatar se encarga de crear la sesión, mostrar el video del avatar y reproducir en voz la respuesta generada por Dify.
+
+La integración usa la API de LiveAvatar:
+
+```txt
+https://api.liveavatar.com
+```
+
+La documentación oficial de LiveAvatar está disponible en:
+
+https://docs.liveavatar.com/
+
+### Variables requeridas
+
+Configura estas variables en `.env.local`:
+
+```env
+HEYGEN_API_KEY=
+HEYGEN_AVATAR_ID=
+HEYGEN_VOICE_ID=
+```
+
+### `HEYGEN_API_KEY`
+
+Es la llave privada para consumir la API de LiveAvatar. Para obtenerla:
+
+1. Ingresa a LiveAvatar con tu cuenta de HeyGen:
+
+```txt
+https://app.liveavatar.com
+```
+
+2. Ve a la sección de desarrolladores o API keys.
+3. Crea o copia tu API key.
+4. Pégala en `.env.local`:
+
+```env
+HEYGEN_API_KEY=tu_api_key_de_liveavatar
+```
+
+Esta llave solo debe vivir en `.env.local`. No debe subirse al repositorio.
+
+### `HEYGEN_AVATAR_ID`
+
+Identifica el avatar que se mostrará en la sesión. Puedes usar un avatar público, un avatar propio o el avatar sandbox para pruebas.
+
+Para obtenerlo:
+
+1. Ingresa a `https://app.liveavatar.com`.
+2. Abre la sección de avatars.
+3. Selecciona el avatar que quieres usar.
+4. Copia su `avatar_id` y configúralo en `.env.local`:
+
+```env
+HEYGEN_AVATAR_ID=avatar_id_de_liveavatar
+```
+
+Si esta variable queda vacía, la app usa el avatar sandbox configurado en el código para pruebas rápidas.
+
+### `HEYGEN_VOICE_ID`
+
+Define la voz que usará el avatar al reproducir texto. LiveAvatar permite usar voces disponibles en su biblioteca, voces generadas junto con un avatar personalizado o integraciones de TTS compatibles.
+
+Para obtenerlo:
+
+1. Ingresa a `https://app.liveavatar.com`.
+2. Revisa la sección de voices o la configuración del avatar.
+3. Copia el `voice_id` que quieres usar.
+4. Configúralo en `.env.local`:
+
+```env
+HEYGEN_VOICE_ID=voice_id_de_liveavatar
+```
+
+Si lo dejas vacío, LiveAvatar puede usar la voz por defecto del avatar cuando esté disponible.
+
+### Variables opcionales
+
+```env
+HEYGEN_CONTEXT_ID=
+HEYGEN_SANDBOX=true
+```
+
+### `HEYGEN_CONTEXT_ID`
+
+Un context en LiveAvatar define instrucciones, personalidad y conocimiento para que el avatar pueda conversar por sí mismo.
+
+En este proyecto normalmente se deja vacío porque la conversación, el RAG y las reglas del agente se manejan desde Dify. LiveAvatar no decide qué responder; solo reproduce con voz y video la respuesta que ya generó Dify.
+
+Solo deberías usar `HEYGEN_CONTEXT_ID` si en el futuro quieres que LiveAvatar gestione parte de la conversación directamente.
+
+### `HEYGEN_SANDBOX`
+
+Permite probar LiveAvatar sin consumir créditos. Para pruebas rápidas puedes usar:
+
+```env
+HEYGEN_SANDBOX=true
+```
+
+En modo sandbox, LiveAvatar usa un avatar de prueba y las sesiones son cortas. Es útil para validar conexión, video y flujo básico antes de usar un avatar real.
+
+Para producción, configura un `HEYGEN_AVATAR_ID` real y usa:
+
+```env
+HEYGEN_SANDBOX=false
+```
+
 ## Instalación
 
 ```bash
@@ -87,7 +222,7 @@ http://localhost:3000
 Configura `.env.local` con tus valores reales:
 
 ```env
-DIFY_API_URL=
+DIFY_API_URL=http://localhost/v1
 DIFY_API_KEY=
 DIFY_USER_ID=
 
@@ -102,11 +237,14 @@ Opcionales:
 
 ```env
 HEYGEN_CONTEXT_ID=
-HEYGEN_SANDBOX=false
+HEYGEN_SANDBOX=true
 ```
 
 Notas:
 
+- Para Dify local con Docker Compose, normalmente `DIFY_API_URL` es `http://localhost/v1`.
+- Para Dify Cloud, normalmente `DIFY_API_URL` es `https://api.dify.ai/v1`.
+- `DIFY_API_KEY` se obtiene desde la sección **API Access** de la aplicación importada en Dify.
 - Si `HEYGEN_AVATAR_ID` queda vacío, la app usa el avatar sandbox de LiveAvatar.
 - Si usas un avatar propio, no actives `HEYGEN_SANDBOX=true`.
 - `DIFY_API_KEY` y `HEYGEN_API_KEY` solo se usan en el servidor.
@@ -141,6 +279,9 @@ Compila la aplicación para producción.
 ## Estructura Del Proyecto
 
 ```txt
+dify/
+  README.md
+  Agente-Virtual-RAG.yaml
 src/
   app/
     api/

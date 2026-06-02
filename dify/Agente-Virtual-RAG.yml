@@ -1,0 +1,303 @@
+app:
+  description: ''
+  icon: 🤖
+  icon_background: '#E4FBCC'
+  icon_type: emoji
+  mode: advanced-chat
+  name: Agente-Virtual-RAG
+  use_icon_as_answer_icon: false
+dependencies:
+- current_identifier: null
+  type: marketplace
+  value:
+    marketplace_plugin_unique_identifier: langgenius/openai:0.4.2@21195ee1321849e0a7d4b3f6b2fd8c2be23ea6c7182e1b444ecc4c1711b52468
+    version: null
+kind: app
+version: 0.6.0
+workflow:
+  conversation_variables: []
+  environment_variables: []
+  features:
+    file_upload:
+      allowed_file_extensions:
+      - .JPG
+      - .JPEG
+      - .PNG
+      - .GIF
+      - .WEBP
+      - .SVG
+      allowed_file_types:
+      - image
+      allowed_file_upload_methods:
+      - local_file
+      - remote_url
+      enabled: false
+      fileUploadConfig:
+        attachment_image_file_size_limit: 2
+        audio_file_size_limit: 50
+        batch_count_limit: 5
+        file_size_limit: 15
+        file_upload_limit: 20
+        image_file_batch_limit: 10
+        image_file_size_limit: 10
+        single_chunk_attachment_limit: 10
+        video_file_size_limit: 100
+        workflow_file_upload_limit: 10
+      image:
+        enabled: false
+        number_limits: 3
+        transfer_methods:
+        - local_file
+        - remote_url
+      number_limits: 3
+    opening_statement: ''
+    retriever_resource:
+      enabled: true
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions: []
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
+      language: ''
+      voice: ''
+  graph:
+    edges:
+    - data:
+        isInLoop: false
+        sourceType: start
+        targetType: knowledge-retrieval
+      id: 1777754436958-source-1777754574268-target
+      source: '1777754436958'
+      sourceHandle: source
+      target: '1777754574268'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: llm
+        targetType: answer
+      id: llm-source-answer-target
+      selected: false
+      source: llm
+      sourceHandle: source
+      target: answer
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: knowledge-retrieval
+        targetType: if-else
+      id: 1777754574268-source-1777759863009-target
+      selected: false
+      source: '1777754574268'
+      sourceHandle: source
+      target: '1777759863009'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: if-else
+        targetType: answer
+      id: 1777759863009-true-1777760426319-target
+      source: '1777759863009'
+      sourceHandle: 'true'
+      target: '1777760426319'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: if-else
+        targetType: llm
+      id: 1777759863009-false-llm-target
+      source: '1777759863009'
+      sourceHandle: 'false'
+      target: llm
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    nodes:
+    - data:
+        selected: true
+        title: User Input
+        type: start
+        variables: []
+      height: 64
+      id: '1777754436958'
+      position:
+        x: -78.98937446441931
+        y: 191.1489288774747
+      positionAbsolute:
+        x: -78.98937446441931
+        y: 191.1489288774747
+      selected: true
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        context:
+          enabled: true
+          variable_selector:
+          - '1777754574268'
+          - result
+        memory:
+          query_prompt_template: ''
+          role_prefix:
+            assistant: ''
+            user: ''
+          window:
+            enabled: false
+            size: 10
+        model:
+          completion_params:
+            temperature: 0.7
+          mode: chat
+          name: gpt-4o
+          provider: langgenius/openai/openai
+        prompt_template:
+        - edition_type: basic
+          id: f91cb3f0-7d30-48ba-9f69-c8ed1cf52287
+          role: system
+          text: "Eres un asistente que SOLO puede responder usando la información\
+            \ recuperada del Knowledge Retrieval.\n\nReglas obligatorias:\n- Responde\
+            \ únicamente con base en el contexto proporcionado.\n- No uses conocimiento\
+            \ previo del modelo.\n- No infieras, no completes huecos y no supongas\
+            \ información.\n- Si el contexto no contiene información suficiente para\
+            \ responder con precisión, responde exactamente:\n  \"No tengo la respuesta\
+            \ en la base de conocimiento proporcionada.\"\n\nContexto:\n{{#context#}}\n\
+            \nPregunta del usuario:\n{{#sys.query#}}"
+        selected: false
+        title: LLM
+        type: llm
+        vision:
+          enabled: false
+      height: 78
+      id: llm
+      position:
+        x: 531.5439822388742
+        y: 540.0996338708106
+      positionAbsolute:
+        x: 531.5439822388742
+        y: 540.0996338708106
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        answer: '{{#llm.text#}}'
+        selected: false
+        title: Answer
+        type: answer
+        variables: []
+      height: 95
+      id: answer
+      position:
+        x: 834.8597803224867
+        y: 540.0996338708106
+      positionAbsolute:
+        x: 834.8597803224867
+        y: 540.0996338708106
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        dataset_ids:
+        - ydfJsIsxpkbzZErH41UkF1D5/6bwCo69kuhsz3eiCJa7p6up/4pyXW8wysY/T58r
+        multiple_retrieval_config:
+          reranking_enable: false
+          reranking_mode: weighted_score
+          top_k: 4
+          weights:
+            keyword_setting:
+              keyword_weight: 0
+            vector_setting:
+              embedding_model_name: text-embedding-nomic-embed-text-v1.5
+              embedding_provider_name: langgenius/openai_api_compatible/openai_api_compatible
+              vector_weight: 1
+            weight_type: customized
+        query_attachment_selector: []
+        query_variable_selector:
+        - '1777754436958'
+        - sys.query
+        retrieval_mode: multiple
+        selected: false
+        title: Knowledge Retrieval
+        type: knowledge-retrieval
+      height: 46
+      id: '1777754574268'
+      position:
+        x: 75.44243203244366
+        y: 307.809963387081
+      positionAbsolute:
+        x: 75.44243203244366
+        y: 307.809963387081
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        cases:
+        - case_id: 'true'
+          conditions:
+          - comparison_operator: empty
+            id: a64b66ac-5eac-41ac-84b7-59b8ad1e47cf
+            value: ''
+            varType: array[object]
+            variable_selector:
+            - '1777754574268'
+            - result
+          id: 'true'
+          logical_operator: and
+        selected: false
+        title: IF/ELSE
+        type: if-else
+      height: 109
+      id: '1777759863009'
+      position:
+        x: 247.85298745814515
+        y: 438.9395575290141
+      positionAbsolute:
+        x: 247.85298745814515
+        y: 438.9395575290141
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        answer: “No tengo la respuesta en la base al conocimiento proporcionado.”
+        selected: false
+        title: Answer 2
+        type: answer
+        variables: []
+      height: 108
+      id: '1777760426319'
+      position:
+        x: 575.9371192646535
+        y: 348.3056087871006
+      positionAbsolute:
+        x: 575.9371192646535
+        y: 348.3056087871006
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    viewport:
+      x: 210.9340295330494
+      y: 157.81946970092264
+      zoom: 0.9686181892266272
+  rag_pipeline_variables: []
